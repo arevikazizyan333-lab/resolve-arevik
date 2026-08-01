@@ -1,0 +1,15 @@
+name: Test issue for claude
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Claude Action
+        run: echo "Claude Action triggered successfully!"
