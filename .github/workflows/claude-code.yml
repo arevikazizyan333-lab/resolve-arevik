@@ -1,9 +1,10 @@
 name: Test issue for claude
 
 on:
-  issue_comment:
-    types: [created]
-
+  push:
+    branches: [ "main", "master" ] 
+  pull_request:
+    branches: [ "main", "master" ]
 jobs:
   claude-test:
     runs-on: ubuntu-latest
