@@ -108,6 +108,67 @@ describe('TicketsService', () => {
     });
   });
 
+  describe('reopening', () => {
+    it('reopens a resolved ticket back to open and clears resolvedAt', async () => {
+      const t = await service.create('test', valid);
+      await service.changeStatus('test', t.id, 'open');
+      await service.changeStatus('test', t.id, 'in_progress');
+      await service.changeStatus('test', t.id, 'resolved');
+      const resolved = await service.findById(t.id);
+      expect(resolved.resolvedAt).not.toBeNull();
+
+      const reopened = await service.changeStatus('test', t.id, 'open');
+      expect(reopened.status).toBe('open');
+      expect(reopened.resolvedAt).toBeNull();
+    });
+
+    it('allows a reopened ticket to walk the workflow again', async () => {
+      const t = await service.create('test', valid);
+      for (const to of ['open', 'in_progress', 'resolved']) {
+        await service.changeStatus('test', t.id, to);
+      }
+      await service.changeStatus('test', t.id, 'open');
+      for (const to of ['in_progress', 'resolved', 'closed']) {
+        await service.changeStatus('test', t.id, to);
+      }
+      const final = await service.findById(t.id);
+      expect(final.status).toBe('closed');
+      expect(final.resolvedAt).not.toBeNull();
+    });
+
+    it('rejects reopening tickets that are not resolved', async () => {
+      const t = await service.create('test', valid);
+      await service.changeStatus('test', t.id, 'open');
+      await service.changeStatus('test', t.id, 'in_progress');
+      await expect(service.changeStatus('test', t.id, 'open')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('still rejects reopening a closed ticket', async () => {
+      const t = await service.create('test', valid);
+      for (const to of ['open', 'in_progress', 'resolved', 'closed']) {
+        await service.changeStatus('test', t.id, to);
+      }
+      await expect(service.changeStatus('test', t.id, 'open')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('records the reopen in the audit trail', async () => {
+      const t = await service.create('narek', valid);
+      for (const to of ['open', 'in_progress', 'resolved']) {
+        await service.changeStatus('narek', t.id, to);
+      }
+      await service.changeStatus('narek', t.id, 'open');
+
+      const entries = await audit.list(t.id);
+      const last = entries[entries.length - 1];
+      expect(last.action).toBe('ticket.status_changed');
+      expect(last.details).toEqual({ from: 'resolved', to: 'open' });
+    });
+  });
+
   describe('comments', () => {
     it('adds public and internal comments in order', async () => {
       const t = await service.create('test', valid);
