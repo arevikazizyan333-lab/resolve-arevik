@@ -6,7 +6,9 @@ on:
   pull_request:
     branches: [ "main", "master" ]
   issues:
-    types: [opened, edited]
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
 
 jobs:
   build:
