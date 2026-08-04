@@ -14,5 +14,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker Image
-        working-directory: ./resolve-starter-nestjs
         run: docker build -t nestjs-app .
