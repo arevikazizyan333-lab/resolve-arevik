@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ticket, TicketPriority, TicketStatus } from './ticket.entity';
+import { OffsetPage } from '../common/pagination';
 
 @Injectable()
 export class TicketsRepository {
@@ -11,13 +12,19 @@ export class TicketsRepository {
 
   async findAll(
     filter: { status?: TicketStatus; priority?: TicketPriority } = {},
-  ): Promise<Ticket[]> {
+    page?: OffsetPage,
+  ): Promise<{ tickets: Ticket[]; total: number }> {
     const where: Record<string, unknown> = {};
     if (filter.status) where.status = filter.status;
     if (filter.priority) where.priority = filter.priority;
-    const tickets = await this.repo.find({ where, order: { createdAt: 'ASC' } });
+    const [tickets, total] = await this.repo.findAndCount({
+      where,
+      order: { createdAt: 'ASC', id: 'ASC' },
+      take: page?.limit,
+      skip: page?.offset,
+    });
     tickets.forEach((t) => this.sortComments(t));
-    return tickets;
+    return { tickets, total };
   }
 
   async findById(id: string): Promise<Ticket | null> {

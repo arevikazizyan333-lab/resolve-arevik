@@ -23,8 +23,10 @@ export class TicketsController {
   findAll(
     @Query('status') status?: TicketStatus,
     @Query('priority') priority?: TicketPriority,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
   ) {
-    return this.ticketsService.findAll({ status, priority });
+    return this.ticketsService.findAll({ status, priority, limit, offset });
   }
 
   @Get(':id')

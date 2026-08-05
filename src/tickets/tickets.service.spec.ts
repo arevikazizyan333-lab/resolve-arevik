@@ -219,4 +219,93 @@ describe('TicketsService', () => {
       NotFoundException,
     );
   });
+
+  describe('pagination', () => {
+    const createMany = async (count: number) => {
+      const created: Ticket[] = [];
+      for (let i = 0; i < count; i++) {
+        created.push(
+          await service.create('test', { ...valid, subject: `Ticket ${i}` }),
+        );
+      }
+      return created;
+    };
+
+    it('defaults to a limit of 50 and offset of 0', async () => {
+      await createMany(3);
+      const page = await service.findAll();
+      expect(page.meta).toEqual({
+        limit: 50,
+        offset: 0,
+        total: 3,
+        hasMore: false,
+      });
+      expect(page.items).toHaveLength(3);
+    });
+
+    it('applies limit and offset against a stable order', async () => {
+      await createMany(5);
+      const full = await service.findAll({ limit: '200' });
+      expect(full.items).toHaveLength(5);
+
+      const page = await service.findAll({ limit: '2', offset: '1' });
+      expect(page.items.map((t) => t.id)).toEqual(
+        full.items.slice(1, 3).map((t) => t.id),
+      );
+      expect(page.meta).toEqual({
+        limit: 2,
+        offset: 1,
+        total: 5,
+        hasMore: true,
+      });
+    });
+
+    it('reports hasMore false on the last page', async () => {
+      await createMany(5);
+      const page = await service.findAll({ limit: '2', offset: '4' });
+      expect(page.items).toHaveLength(1);
+      expect(page.meta.hasMore).toBe(false);
+    });
+
+    it('caps limit at 200', async () => {
+      await expect(service.findAll({ limit: '201' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('rejects a non-positive limit', async () => {
+      await expect(service.findAll({ limit: '0' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('rejects a negative offset', async () => {
+      await expect(service.findAll({ offset: '-1' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('rejects non-integer limit/offset', async () => {
+      await expect(service.findAll({ limit: 'abc' })).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.findAll({ offset: '1.5' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('applies pagination after filtering', async () => {
+      const created = await createMany(4);
+      await service.changeStatus('test', created[1].id, 'open');
+      await service.changeStatus('test', created[3].id, 'open');
+
+      const allOpen = await service.findAll({ status: 'open', limit: '200' });
+      expect(allOpen.items).toHaveLength(2);
+
+      const page = await service.findAll({ status: 'open', limit: '1', offset: '1' });
+      expect(page.items.map((t) => t.id)).toEqual([allOpen.items[1].id]);
+      expect(page.meta.total).toBe(2);
+      expect(page.meta.hasMore).toBe(false);
+    });
+  });
 });

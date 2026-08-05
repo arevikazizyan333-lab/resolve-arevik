@@ -7,7 +7,7 @@ export class StatsController {
 
   @Get()
   async stats() {
-    const all = await this.tickets.findAll();
+    const { tickets: all } = await this.tickets.findAll();
 
     const byStatus: Record<string, number> = {};
     const byPriority: Record<string, number> = {};
