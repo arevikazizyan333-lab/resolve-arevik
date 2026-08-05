@@ -11,12 +11,17 @@ export class TicketsRepository {
   ) {}
 
   async findAll(
-    filter: { status?: TicketStatus; priority?: TicketPriority } = {},
+    filter: {
+      status?: TicketStatus;
+      priority?: TicketPriority;
+      customerEmail?: string;
+    } = {},
     page?: OffsetPage,
   ): Promise<{ tickets: Ticket[]; total: number }> {
     const where: Record<string, unknown> = {};
     if (filter.status) where.status = filter.status;
     if (filter.priority) where.priority = filter.priority;
+    if (filter.customerEmail) where.customerEmail = filter.customerEmail;
     const [tickets, total] = await this.repo.findAndCount({
       where,
       order: { createdAt: 'ASC', id: 'ASC' },

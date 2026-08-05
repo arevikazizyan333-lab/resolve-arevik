@@ -307,5 +307,17 @@ describe('TicketsService', () => {
       expect(page.meta.total).toBe(2);
       expect(page.meta.hasMore).toBe(false);
     });
+
+    it('filters by customerEmail', async () => {
+      const t = await service.create('test', {
+        ...valid,
+        customerEmail: 'other@example.am',
+      });
+      await createMany(3);
+
+      const page = await service.findAll({ customerEmail: 'other@example.am' });
+      expect(page.items.map((x) => x.id)).toEqual([t.id]);
+      expect(page.meta.total).toBe(1);
+    });
   });
 });

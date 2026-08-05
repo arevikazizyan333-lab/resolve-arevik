@@ -132,13 +132,18 @@ export class TicketsService {
     filter: {
       status?: TicketStatus;
       priority?: TicketPriority;
+      customerEmail?: string;
       limit?: string;
       offset?: string;
     } = {},
   ): Promise<Paginated<Ticket>> {
     const page = parseOffsetPage(filter);
     const { tickets, total } = await this.tickets.findAll(
-      { status: filter.status, priority: filter.priority },
+      {
+        status: filter.status,
+        priority: filter.priority,
+        customerEmail: filter.customerEmail,
+      },
       page,
     );
     return paginate(tickets, total, page);
