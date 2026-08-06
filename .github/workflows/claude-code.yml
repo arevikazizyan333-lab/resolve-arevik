@@ -1,4 +1,4 @@
-name: Claude Code V2
+name: Claude Code 
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
     types: [opened, edited]
   issue_comment:
     types: [created]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,3 +20,8 @@ jobs:
 
       - name: Build Docker Image
         run: docker build -t nestjs-app .
+
+      - name: Run Claude Code Action
+        uses: anthropic/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
