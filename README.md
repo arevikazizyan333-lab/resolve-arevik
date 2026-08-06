@@ -78,3 +78,5 @@ Class 3: context kit + tags/canned responses · Class 4: the SLA engine
 (spec-driven) · Class 5: review gates + the triage agent · Class 6: SLA
 watchdog + self-healing CI · Class 7: chatbot (RAG), MCP, security
 hardening · Class 8: capstone. 
+
+
