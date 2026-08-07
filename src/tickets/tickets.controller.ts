@@ -41,6 +41,11 @@ export class TicketsController {
     return this.ticketsService.findById(id);
   }
 
+  @Get(':id/audit')
+  findAuditTrail(@Param('id') id: string) {
+    return this.ticketsService.findAuditTrail(id);
+  }
+
   @Post(':id/status')
   changeStatus(
     @Param('id') id: string,

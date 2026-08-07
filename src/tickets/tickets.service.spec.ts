@@ -212,6 +212,33 @@ describe('TicketsService', () => {
       expect(entries[1].details).toEqual({ from: 'new', to: 'open' });
       expect(entries[2].actor).toBe('agent-1');
     });
+
+    // Asserts the contract (seq strictly descending) rather than re-hardcoding
+    // the fixture the test above already pins. The second ticket interleaves its
+    // entries with this one's, so a trail that forgot to scope by id would come
+    // back five long.
+    it('returns only this ticket\'s trail, newest first', async () => {
+      const mine = await service.create('narek', valid);
+      const other = await service.create('ani', valid);
+      await service.changeStatus('narek', mine.id, 'open');
+      await service.changeStatus('ani', other.id, 'open');
+      await service.addComment('agent-1', mine.id, {
+        author: 'agent-1',
+        body: 'hi',
+      });
+
+      const seqs = (await service.findAuditTrail(mine.id)).map((e) => e.seq);
+      expect(seqs).toHaveLength(3); // created + status_changed + commented
+      for (let i = 1; i < seqs.length; i++) {
+        expect(seqs[i]).toBeLessThan(seqs[i - 1]);
+      }
+    });
+
+    it('404s on the audit trail of an unknown ticket', async () => {
+      await expect(service.findAuditTrail('tkt_missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   it('404s on unknown tickets', async () => {

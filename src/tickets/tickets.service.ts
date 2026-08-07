@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { TicketsRepository } from './tickets.repository';
 import { AuditService } from '../audit/audit.service';
+import { AuditEntry } from '../audit/audit-entry.entity';
 import { Ticket, TicketPriority, TicketStatus } from './ticket.entity';
 import { TicketComment } from './ticket-comment.entity';
 import { newId } from '../common/ids';
@@ -153,5 +154,16 @@ export class TicketsService {
     const ticket = await this.tickets.findById(id);
     if (!ticket) throw new NotFoundException(`ticket ${id} not found`);
     return ticket;
+  }
+
+  // Newest first — deliberately the reverse of GET /audit, because a ticket's
+  // detail view reads most-recent-first. Sorted on `seq` rather than reversing
+  // whatever order AuditService.list happened to return, so this survives a
+  // change to that default. Unpaginated, like GET /audit: one ticket's trail is
+  // bounded by that ticket's own activity.
+  async findAuditTrail(id: string): Promise<AuditEntry[]> {
+    await this.findById(id); // 404s on unknown tickets, like GET /tickets/:id
+    const entries = await this.audit.list(id);
+    return [...entries].sort((a, b) => b.seq - a.seq);
   }
 }
