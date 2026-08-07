@@ -10,19 +10,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  claude-and-build:
+  claude:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
       issues: write
-
+      id-token: write
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Run Claude Code Action
-        uses: anthropics/claude-code-action@v1
+        uses: anthropic/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 
