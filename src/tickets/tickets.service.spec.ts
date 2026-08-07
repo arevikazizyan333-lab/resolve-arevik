@@ -212,6 +212,37 @@ describe('TicketsService', () => {
       expect(entries[1].details).toEqual({ from: 'new', to: 'open' });
       expect(entries[2].actor).toBe('agent-1');
     });
+
+    it('returns this ticket\'s entries newest first', async () => {
+      const t = await service.create('narek', valid);
+      await service.changeStatus('narek', t.id, 'open');
+      await service.addComment('agent-1', t.id, { author: 'agent-1', body: 'hi' });
+
+      const entries = await service.findAuditTrail(t.id);
+      expect(entries.map((e) => e.action)).toEqual([
+        'ticket.commented',
+        'ticket.status_changed',
+        'ticket.created',
+      ]);
+      expect(entries[0].actor).toBe('agent-1');
+      expect(entries[1].details).toEqual({ from: 'new', to: 'open' });
+    });
+
+    it('excludes entries belonging to other tickets', async () => {
+      const mine = await service.create('narek', valid);
+      const other = await service.create('ani', valid);
+      await service.changeStatus('ani', other.id, 'open');
+
+      const entries = await service.findAuditTrail(mine.id);
+      expect(entries).toHaveLength(1);
+      expect(entries[0].ticketId).toBe(mine.id);
+    });
+
+    it('404s on the audit trail of an unknown ticket', async () => {
+      await expect(service.findAuditTrail('tkt_missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   it('404s on unknown tickets', async () => {
