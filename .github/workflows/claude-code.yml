@@ -1,4 +1,4 @@
-name: Claude Code Workflow
+name: Claude Code
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Claude Code Action
-        uses: anthropic/claude-code-action@v1
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 
