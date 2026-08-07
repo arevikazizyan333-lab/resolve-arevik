@@ -48,6 +48,8 @@ both behave identically.
 - `POST /tickets/:id/comments` — `{ author, body, internal }`
   (`internal: true` = agent-only note; never expose to customers)
 - `GET /tickets/:id/audit` — this ticket's audit entries, newest first
+  (deliberately the reverse of `GET /audit?ticketId=`, which stays oldest-first
+  like every other list here; unpaginated, also like `GET /audit`)
 - `GET /audit` — every mutation, with actor (from `X-Actor` header)
 - `GET /stats` — counts by status/priority + average resolution minutes
 

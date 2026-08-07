@@ -156,9 +156,14 @@ export class TicketsService {
     return ticket;
   }
 
+  // Newest first — deliberately the reverse of GET /audit, because a ticket's
+  // detail view reads most-recent-first. Sorted on `seq` rather than reversing
+  // whatever order AuditService.list happened to return, so this survives a
+  // change to that default. Unpaginated, like GET /audit: one ticket's trail is
+  // bounded by that ticket's own activity.
   async findAuditTrail(id: string): Promise<AuditEntry[]> {
-    await this.findById(id); // 404s on unknown tickets
+    await this.findById(id); // 404s on unknown tickets, like GET /tickets/:id
     const entries = await this.audit.list(id);
-    return entries.reverse(); // AuditService lists oldest first
+    return [...entries].sort((a, b) => b.seq - a.seq);
   }
 }

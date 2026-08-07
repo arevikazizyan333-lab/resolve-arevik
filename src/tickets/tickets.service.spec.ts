@@ -213,29 +213,25 @@ describe('TicketsService', () => {
       expect(entries[2].actor).toBe('agent-1');
     });
 
-    it('returns this ticket\'s entries newest first', async () => {
-      const t = await service.create('narek', valid);
-      await service.changeStatus('narek', t.id, 'open');
-      await service.addComment('agent-1', t.id, { author: 'agent-1', body: 'hi' });
-
-      const entries = await service.findAuditTrail(t.id);
-      expect(entries.map((e) => e.action)).toEqual([
-        'ticket.commented',
-        'ticket.status_changed',
-        'ticket.created',
-      ]);
-      expect(entries[0].actor).toBe('agent-1');
-      expect(entries[1].details).toEqual({ from: 'new', to: 'open' });
-    });
-
-    it('excludes entries belonging to other tickets', async () => {
+    // Asserts the contract (seq strictly descending) rather than re-hardcoding
+    // the fixture the test above already pins. The second ticket interleaves its
+    // entries with this one's, so a trail that forgot to scope by id would come
+    // back five long.
+    it('returns only this ticket\'s trail, newest first', async () => {
       const mine = await service.create('narek', valid);
       const other = await service.create('ani', valid);
+      await service.changeStatus('narek', mine.id, 'open');
       await service.changeStatus('ani', other.id, 'open');
+      await service.addComment('agent-1', mine.id, {
+        author: 'agent-1',
+        body: 'hi',
+      });
 
-      const entries = await service.findAuditTrail(mine.id);
-      expect(entries).toHaveLength(1);
-      expect(entries[0].ticketId).toBe(mine.id);
+      const seqs = (await service.findAuditTrail(mine.id)).map((e) => e.seq);
+      expect(seqs).toHaveLength(3); // created + status_changed + commented
+      for (let i = 1; i < seqs.length; i++) {
+        expect(seqs[i]).toBeLessThan(seqs[i - 1]);
+      }
     });
 
     it('404s on the audit trail of an unknown ticket', async () => {
