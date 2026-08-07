@@ -21,7 +21,4 @@ jobs:
       - name: Build Docker Image
         run: docker build -t nestjs-app .
 
-      - name: Run Claude Code Action
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+    
