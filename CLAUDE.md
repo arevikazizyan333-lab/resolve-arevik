@@ -66,3 +66,5 @@ Runtime uses PostgreSQL; tests boot the real Nest module graph against in-memory
 - A `/feature` slash command (`.claude/commands/feature.md`) defines the explore -> plan -> implement -> test -> summary workflow for shipping small features – use it for feature-shaped tasks.
 
 ## Deploy
+
+Push to `main` triggers `.github/workflows/deploy.yml`: rsync the repo to an EC2 instance (provisioned by `terraform/`) and `docker compose up -d --build` there, then smoke-test `/stats`. Requires `EC2_HOST` and `EC2_SSH_PRIVATE_KEY` repo secrets. The only contract: the repo runs with `docker compose up -d --build` and serves `/stats` on `APP_PORT`.
