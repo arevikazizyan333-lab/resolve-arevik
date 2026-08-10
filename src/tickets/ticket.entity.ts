@@ -37,6 +37,9 @@ export class Ticket {
   @Column({ type: 'varchar' })
   status: TicketStatus;
 
+  @Column({ type: 'simple-json' })
+  tags: string[];
+
   @OneToMany(() => TicketComment, (c) => c.ticket, {
     cascade: true,
     eager: true,

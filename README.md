@@ -41,15 +41,22 @@ both behave identically.
 
 - `POST /tickets` — `{ subject, description, customerEmail, priority }`
   (priority: `low | normal | high | urgent`)
-- `GET /tickets?status=&priority=` — list (filterable)
+- `GET /tickets?status=&priority=&tag=` — list (filterable; `tag` matches
+  a single tag exactly, case-insensitive)
 - `GET /tickets/:id` — one ticket, including comments
 - `POST /tickets/:id/status` — `{ "to": "open" | ... }` (whitelisted
   transitions; illegal moves → 400 listing allowed next states)
 - `POST /tickets/:id/comments` — `{ author, body, internal }`
   (`internal: true` = agent-only note; never expose to customers)
+- `PUT /tickets/:id/tags` — `{ tags: string[] }` — replaces the ticket's
+  tags (trimmed, lowercased, deduplicated; max 10)
+- `POST /tickets/:id/canned-responses/:cannedResponseId/apply` —
+  `{ internal? }` — adds a comment from the canned response's body
 - `GET /tickets/:id/audit` — this ticket's audit entries, newest first
   (deliberately the reverse of `GET /audit?ticketId=`, which stays oldest-first
   like every other list here; unpaginated, also like `GET /audit`)
+- `POST /canned-responses` — `{ title, body }`
+- `GET /canned-responses` — list, oldest first
 - `GET /audit` — every mutation, with actor (from `X-Actor` header)
 - `GET /stats` — counts by status/priority + average resolution minutes
 

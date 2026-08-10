@@ -10,8 +10,10 @@ import { Ticket, TicketPriority, TicketStatus } from './ticket.entity';
 import { TicketComment } from './ticket-comment.entity';
 import { newId } from '../common/ids';
 import { Paginated, parseOffsetPage, paginate } from '../common/pagination';
+import { CannedResponse } from './canned-response.model';
 
 const PRIORITIES: TicketPriority[] = ['low', 'normal', 'high', 'urgent'];
+const MAX_TAGS = 10;
 
 export const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   new: ['open'],
@@ -62,6 +64,7 @@ export class TicketsService {
     ticket.customerEmail = input.customerEmail;
     ticket.priority = input.priority as TicketPriority;
     ticket.status = 'new';
+    ticket.tags = [];
     ticket.comments = [];
     ticket.createdAt = now;
     ticket.updatedAt = now;
@@ -134,20 +137,104 @@ export class TicketsService {
       status?: TicketStatus;
       priority?: TicketPriority;
       customerEmail?: string;
+      tag?: string;
       limit?: string;
       offset?: string;
     } = {},
   ): Promise<Paginated<Ticket>> {
     const page = parseOffsetPage(filter);
+    const tag = filter.tag?.trim().toLowerCase() || undefined;
     const { tickets, total } = await this.tickets.findAll(
       {
         status: filter.status,
         priority: filter.priority,
         customerEmail: filter.customerEmail,
+        tag,
       },
       page,
     );
     return paginate(tickets, total, page);
+  }
+
+  async setTags(actor: string, id: string, tagsInput: unknown): Promise<Ticket> {
+    const ticket = await this.findById(id);
+
+    if (!Array.isArray(tagsInput) || tagsInput.some((t) => typeof t !== 'string')) {
+      throw new BadRequestException('tags must be an array of strings');
+    }
+    const trimmed = tagsInput.map((t) => t.trim());
+    if (trimmed.some((t) => t.length === 0)) {
+      throw new BadRequestException('tags must not contain blank entries');
+    }
+    const unique = Array.from(new Set(trimmed.map((t) => t.toLowerCase())));
+    if (unique.length > MAX_TAGS) {
+      throw new BadRequestException(
+        `tags must contain at most ${MAX_TAGS} unique tags`,
+      );
+    }
+
+    const previousTags = ticket.tags;
+    ticket.tags = unique;
+    await this.tickets.save(ticket);
+    await this.audit.record(actor, 'ticket.tags_updated', ticket.id, {
+      previousTags,
+      newTags: unique,
+    });
+    return ticket;
+  }
+
+  async createCannedResponse(
+    actor: string,
+    input: { title?: string; body?: string },
+  ): Promise<CannedResponse> {
+    if (!input.title?.trim()) {
+      throw new BadRequestException('title must be a non-empty string');
+    }
+    if (!input.body?.trim()) {
+      throw new BadRequestException('body must be a non-empty string');
+    }
+    const cannedResponse: CannedResponse = {
+      id: newId('cr'),
+      title: input.title.trim(),
+      body: input.body.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    this.tickets.saveCannedResponse(cannedResponse);
+    return cannedResponse;
+  }
+
+  async findAllCannedResponses(): Promise<CannedResponse[]> {
+    return this.tickets.findAllCannedResponses();
+  }
+
+  async applyCannedResponse(
+    actor: string,
+    ticketId: string,
+    cannedResponseId: string,
+    input: { internal?: boolean },
+  ): Promise<TicketComment> {
+    const ticket = await this.findById(ticketId);
+    const cannedResponse = this.tickets.findCannedResponseById(cannedResponseId);
+    if (!cannedResponse) {
+      throw new NotFoundException(
+        `canned response ${cannedResponseId} not found`,
+      );
+    }
+
+    const comment = new TicketComment();
+    comment.id = newId('cmt');
+    comment.author = actor;
+    comment.body = cannedResponse.body;
+    comment.internal = input?.internal === true;
+    comment.at = new Date().toISOString();
+
+    ticket.comments.push(comment);
+    await this.tickets.save(ticket);
+    await this.audit.record(actor, 'ticket.canned_response_applied', ticket.id, {
+      cannedResponseId: cannedResponse.id,
+      commentId: comment.id,
+    });
+    return comment;
   }
 
   async findById(id: string): Promise<Ticket> {
