@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-08-11T11:36:09.944Z",
+  "prompt": "Add a new endpoint GET /tickets/:id/history in TicketsController that aggregates ticket audit entries and comments ordered by createdAt ascending. Add unit tests in tickets.service.spec.ts.",
+  "runsCount": 3,
+  "identicalDiffsRatio": "0/3",
+  "varianceScore": "100.0%",
+  "diffsSummary": {
+    "run_1": {
+      "lineCount": 125
+    },
+    "run_2": {
+      "lineCount": 148
+    },
+    "run_3": {
+      "lineCount": 115
+    }
+  }
+}

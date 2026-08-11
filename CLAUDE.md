@@ -62,3 +62,8 @@ Runtime uses PostgreSQL; tests boot the real Nest module graph against in-memory
 ## Deploy
 
 Push to `main` triggers `.github/workflows/deploy.yml`: rsync the repo to an EC2 instance (provisioned by `terraform/`) and `docker compose up -d --build` there, then smoke-test `/stats`. Requires `EC2_HOST` and `EC2_SSH_PRIVATE_KEY` repo secrets. The only contract: the repo runs with `docker compose up -d --build` and serves `/stats` on `APP_PORT`.
+
+## Coding Standards
+- Always enforce strict TypeScript types for all controller endpoints.
+- Ensure proper validation DTOs are used for request payloads.
+- Always add meaningful inline comments for complex business logic.
