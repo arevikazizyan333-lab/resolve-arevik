@@ -1,4 +1,6 @@
 {
+  "_comment_1": "Copy to .claude/settings.json to activate. Hooks load at SESSION START - restart claude after copying.",
+  "_comment_2": "matcher is a regex over the TOOL NAME. 'Edit' alone misses Write and MultiEdit.",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,6 +9,40 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-audit.js\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent-test-shrink.js\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-dangerous-commands.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent-main-commit.js\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/run-tests.sh\"",
+            "timeout": 120
           }
         ]
       }

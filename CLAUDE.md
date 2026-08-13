@@ -1,4 +1,4 @@
-`# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -40,14 +40,11 @@ Config is env-driven with working defaults (`.env.example` documents them); the 
 
 ## Architecture
 
-Three NestJS modules under `src/`, wired in `app.module.ts`:
+Three NestJS modules under `src/`, wired in `app.module.ts`. Each has its own `CLAUDE.md` with module-specific conventions — read it before touching that module:
 
-- **tickets/** – the core. `TicketsController` (thin) -> `TicketsService` (validation, status machine, orchestration) -> `TicketsRepository` (all TypeORM access). Entities: `Ticket` (string PK like `tkt_alb2c3d4`) and `TicketComment` (eager-loaded, cascade-saved via the ticket; autoincrement `seq` gives stable comment ordering).
-- **audit/** – `AuditService.record(actor, action, ticketId, details)` writes an `AuditEntry`; exposed at `GET /audit`.
-- **stats/** – `GET /stats`; reads through `TicketsRepository` (imports TicketsModule), computes counts in JS, not SQL.
-
-Status machine lives in `ALLOWED_TRANSITIONS` in `src/tickets/tickets.service.ts`:
-`new` -> `open` -> `in_progress` -> (`waiting_customer` <=> `in_progress`) -> `resolved` -> `closed`. Moving to `resolved` stamps `resolvedAt` (used by /stats avg resolution time).
+- **tickets/** – the core (`TicketsController` -> `TicketsService` -> `TicketsRepository`). See [src/tickets/CLAUDE.md](src/tickets/CLAUDE.md).
+- **audit/** – append-only trail every mutation writes to. See [src/audit/CLAUDE.md](src/audit/CLAUDE.md).
+- **stats/** – read-only aggregate endpoint. See [src/stats/CLAUDE.md](src/stats/CLAUDE.md).
 
 ### The dual-database trick
 
@@ -56,11 +53,8 @@ Runtime uses PostgreSQL; tests boot the real Nest module graph against in-memory
 ## Conventions (enforced by the existing code – follow them)
 
 - Services never touch the TypeORM DataSource directly; all data access goes through the module's repository ('TicketsRepository', 'AuditService').
-- Every mutation writes an audit entry. Action names are 'entity.verb': 'ticket.created', 'ticket.status_changed', 'ticket.commented'. The actor comes from the 'X-Actor' header (controllers default it to "api").
-- Validation errors are 'BadRequestException' naming the offending field; controllers stay thin and pass raw bodies to the service.
+- Every mutation writes an audit entry — see [src/audit/CLAUDE.md](src/audit/CLAUDE.md) for the format.
 - Tests use the real service + repository over in-memory SQLite – no mocks of our own code.
-- IDs are 'prefix_' + 8 hex chars via 'newId()' in 'src/common/ids.ts' ('tkt_', 'cmt_').
-- Comments with 'internal: true' are agent-only notes – never expose them to customers.
 - 'synchronize: true' in 'app.module.ts' is a v0 convenience; migrations replace it in a later class. Don't introduce schema changes that rely on it silently.
 - `src/audit/` is protected by a Claude Code hook (`.claude/hooks/protect-audit.js`) that blocks Edit/Write to that path – do not attempt to work around it; ask the user if a change there is truly needed.
 - A `/feature` slash command (`.claude/commands/feature.md`) defines the explore -> plan -> implement -> test -> summary workflow for shipping small features – use it for feature-shaped tasks.
@@ -68,3 +62,8 @@ Runtime uses PostgreSQL; tests boot the real Nest module graph against in-memory
 ## Deploy
 
 Push to `main` triggers `.github/workflows/deploy.yml`: rsync the repo to an EC2 instance (provisioned by `terraform/`) and `docker compose up -d --build` there, then smoke-test `/stats`. Requires `EC2_HOST` and `EC2_SSH_PRIVATE_KEY` repo secrets. The only contract: the repo runs with `docker compose up -d --build` and serves `/stats` on `APP_PORT`.
+
+## Coding Standards
+- Always enforce strict TypeScript types for all controller endpoints.
+- Ensure proper validation DTOs are used for request payloads.
+- Always add meaningful inline comments for complex business logic.
