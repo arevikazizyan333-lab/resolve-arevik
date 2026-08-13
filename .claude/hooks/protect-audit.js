@@ -1,3 +1,6 @@
+const path = require('path');
+const fs = require('fs');
+
 let input = '';
 
 process.stdin.on('data', chunk => {
@@ -15,15 +18,35 @@ process.stdin.on('end', () => {
     process.exit(0);
   }
 
-  // Check if file is inside src/audit/ (handling both / and \ for Windows)
-  if (filePath && (filePath.includes('src/audit/') || filePath.includes('src\\audit\\'))) {
-  console.error(
-    'POLICY VIOLATION: Files in src/audit/ contain core compliance logic and immutable record handling. ' +
-    'Direct edits are blocked to maintain audit integrity. To modify this domain, submit an Architecture Proposal ' +
-    'and update the corresponding core schema first - explain this restriction and the required workflow to the user.'
-  );
-  process.exit(2);
-}
+  if (filePath) {
+    // 1. Resolve to absolute path and normalize path separators / relative parts (..)
+    let absolutePath = path.resolve(filePath);
+
+    // 2. Resolve symlinks if file/directory exists
+    try {
+      if (fs.existsSync(absolutePath)) {
+        absolutePath = fs.realpathSync(absolutePath);
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // 3. Convert to lowercase for case-insensitive checks
+    const normalizedPath = absolutePath.toLowerCase();
+
+    // Target folder to protect (in lowercase, normalized)
+    const protectedDir = path.resolve('src/audit').toLowerCase();
+
+    // Check if path starts with protected directory
+    if (normalizedPath.startsWith(protectedDir) || normalizedPath.includes(`${path.sep}src${path.sep}audit`)) {
+      console.error(
+        'POLICY VIOLATION: Files in src/audit/ contain core compliance logic and immutable record handling. ' +
+        'Direct edits are blocked to maintain audit integrity. To modify this domain, submit an Architecture Proposal ' +
+        'and update the corresponding core schema first - explain this restriction and the required workflow to the user.'
+      );
+      process.exit(2);
+    }
+  }
 
   process.exit(0);
 });
