@@ -20,6 +20,19 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent-test-shrink.js\""
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-dangerous-commands.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent-main-commit.js\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
