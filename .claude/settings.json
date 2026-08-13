@@ -11,6 +11,15 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-audit.js\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent-test-shrink.js\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
