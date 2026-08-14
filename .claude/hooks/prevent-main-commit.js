@@ -25,11 +25,17 @@ process.stdin.on('end', () => {
     const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
 
     if (branch === 'main' || branch === 'master') {
-      console.error(
-        'BLOCKED: Direct commits to the main/master branch are strictly forbidden. ' +
-        'Please checkout a feature branch before committing.'
-      );
-      process.exit(2); // BLOCK
+    // Instead of exit 2 + console.error, we return a JSON payload in 'ask' mode
+      const response = {
+        hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          permissionDecision: "ask",
+          permissionDecisionReason: `Direct commits to '${branch}' are discouraged. Confirm if this is an intentional hotfix.`
+        }
+      };
+
+      console.log(JSON.stringify(response));
+      process.exit(0); // JSON output is expected to be printed to stdout, so we exit with 0 to indicate success
     }
 
     process.exit(0);
