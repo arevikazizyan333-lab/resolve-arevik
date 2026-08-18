@@ -1,0 +1,19 @@
+### Create Ticket
+POST http://localhost:3000/tickets
+Content-Type: application/json
+
+{
+  "subject": "Refund Request",
+  "description": "Customer is asking for a refund",
+  "customerEmail": "test@example.com",
+  "priority": "normal"
+}
+
+### Check Reply
+POST http://localhost:3000/replies/check
+Content-Type: application/json
+
+{
+  "ticketId": "tkt_f3a166a9",
+  "draft": "We apologize for the delay. We will issue a full refund immediately."
+}
